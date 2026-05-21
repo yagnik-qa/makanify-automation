@@ -12,8 +12,11 @@ class BasePage:
         self.page.goto(url, wait_until="domcontentloaded")
 
     def click_and_select_first_option(self, trigger: Locator) -> None:
-        trigger.scroll_into_view_if_needed()
-        trigger.click()
+        try:
+            trigger.scroll_into_view_if_needed(timeout=3_000)
+            trigger.click(timeout=3_000)
+        except Exception:
+            trigger.evaluate("el => el.click()")
         option = self.page.locator(
             "xpath=((//*[@role='listbox'])[last()]//*[@role='option'][normalize-space()!=''])[1]"
         )
@@ -24,7 +27,11 @@ class BasePage:
                 "xpath=(//*[@role='option'][normalize-space()!=''])[1]"
             )
             option.wait_for(state="visible", timeout=DROPDOWN_TIMEOUT_MS)
-        option.click()
+        try:
+            option.scroll_into_view_if_needed(timeout=2_000)
+            option.click(timeout=2_000)
+        except Exception:
+            option.evaluate("el => el.click()")
 
     def click_with_fallback(self, primary: Locator, fallback: Locator) -> Locator:
         try:

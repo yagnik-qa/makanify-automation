@@ -23,6 +23,7 @@ class LeadsPage(BasePage):
         )
         self.contact_combobox = page.locator("xpath=(//form//button[@role='combobox'])[1]")
         self.save_lead_button = page.get_by_role("button", name="Save Lead")
+        self.project_dropdown = page.locator("//form//button[contains(., 'Select Project') or contains(., 'Select project')]")
         self.field_11_dropdown = page.locator("//form/div[11]//button[1]")
 
     def expect_on_leads_page(self) -> None:
@@ -42,20 +43,29 @@ class LeadsPage(BasePage):
             self.click_and_select_first_option(combobox)
 
         field_11 = self.click_with_fallback(
-            self.page.locator("/html/body/div[11]/motion.div[2]/form/div[11]/div[1]/button[1]"),
+            self.project_dropdown,
             self.field_11_dropdown,
         )
         self.click_and_select_first_option(field_11)
 
+        # Select Purpose combobox
+        purpose_combobox = self.page.locator("form button", has_text="Purpose")
+        self.click_and_select_first_option(purpose_combobox)
+
     def save_lead(self) -> None:
         self.save_lead_button.scroll_into_view_if_needed()
         self.save_lead_button.click()
+
+    def verify_success_toast(self) -> None:
+        expect(self.page.get_by_text("Lead Created", exact=True)).to_be_visible()
+        expect(self.page.get_by_text("Successfully created the lead.", exact=True)).to_be_visible()
 
     def create_lead_full_flow(self) -> None:
         self.open_add_lead_form()
         self.select_contact_first_option()
         self.fill_remaining_dropdowns()
         self.save_lead()
+        self.verify_success_toast()
         self.expect_on_leads_page()
 
     def _resolve_combobox(self, primary_xpath: str, fallback_xpath: str | None) -> Locator:
