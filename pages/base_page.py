@@ -33,6 +33,36 @@ class BasePage:
         except Exception:
             option.evaluate("el => el.click()")
 
+    def click_and_select_random_option(self, trigger: Locator) -> str:
+        try:
+            trigger.scroll_into_view_if_needed(timeout=3_000)
+            trigger.click(timeout=3_000)
+        except Exception:
+            trigger.evaluate("el => el.click()")
+        options_locator = self.page.locator(
+            "xpath=(//*[@role='listbox'])[last()]//*[@role='option'][normalize-space()!='']"
+        )
+        try:
+            options_locator.first.wait_for(state="visible", timeout=DROPDOWN_TIMEOUT_MS)
+        except Exception:
+            options_locator = self.page.locator(
+                "xpath=//*[@role='option'][normalize-space()!='']"
+            )
+            options_locator.first.wait_for(state="visible", timeout=DROPDOWN_TIMEOUT_MS)
+        count = options_locator.count()
+        if count == 0:
+            raise Exception("No options found in dropdown listbox")
+        import random
+        random_index = random.randint(0, count - 1)
+        target_option = options_locator.nth(random_index)
+        option_text = target_option.inner_text().strip().replace('\n', ' ')
+        try:
+            target_option.scroll_into_view_if_needed(timeout=2_000)
+            target_option.click(timeout=2_000)
+        except Exception:
+            target_option.evaluate("el => el.click()")
+        return option_text
+
     def click_with_fallback(self, primary: Locator, fallback: Locator) -> Locator:
         try:
             primary.wait_for(state="visible", timeout=2_000)
