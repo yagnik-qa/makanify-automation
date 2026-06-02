@@ -47,7 +47,16 @@ class LeadsPage(BasePage):
             self.project_dropdown,
             self.field_11_dropdown,
         )
-        project_name = self.click_and_select_random_option(field_11)
+        
+        from config.settings import get_stored_project_name
+        stored_project = get_stored_project_name()
+        if stored_project:
+            print(f"Selecting stored project name: '{stored_project}'")
+            self.click_and_select_specific_option(field_11, stored_project)
+            project_name = stored_project
+        else:
+            print("No stored project name found. Selecting dynamic random project name...")
+            project_name = self.click_and_select_random_option(field_11)
 
         # Select Purpose combobox
         purpose_combobox = self.page.locator("form button", has_text="Purpose")

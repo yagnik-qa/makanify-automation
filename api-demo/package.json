@@ -1,0 +1,23 @@
+{
+  "name": "api-demo-jest-supertest",
+  "version": "1.0.0",
+  "description": "Beginner-friendly API automation testing demo using Jest and Supertest",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "api",
+    "testing",
+    "jest",
+    "supertest",
+    "automation",
+    "qa"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  }
+}

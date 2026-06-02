@@ -61,13 +61,41 @@ class PropertyPage(BasePage):
         self.page.wait_for_timeout(500)
         
         options_locator = self.page.locator("//*[@role='option']")
-        options_locator.first.wait_for(state="visible", timeout=5000)
-        options = options_locator.all()
-        if not options:
-            raise Exception("No options found in dropdown")
+        try:
+            options_locator.first.wait_for(state="visible", timeout=3000)
+        except Exception:
+            try:
+                trigger.click(timeout=2000)
+            except Exception:
+                pass
+            self.page.wait_for_timeout(500)
+            raise Exception("No options rendered in dropdown")
             
-        random_index = random.randint(0, len(options) - 1)
-        target_option = options[random_index]
+        options = options_locator.all()
+        valid_options = []
+        for opt in options:
+            attr_data_disabled = opt.get_attribute("data-disabled")
+            attr_disabled = opt.get_attribute("disabled")
+            attr_aria_disabled = opt.get_attribute("aria-disabled")
+            text = opt.inner_text().strip()
+            is_disabled = (
+                attr_data_disabled in ("", "true")
+                or attr_disabled is not None
+                or attr_aria_disabled == "true"
+            )
+            if not is_disabled and "no results found" not in text.lower() and "no options" not in text.lower() and text != "":
+                valid_options.append(opt)
+                
+        if not valid_options:
+            try:
+                trigger.click(timeout=2000)
+            except Exception:
+                pass
+            self.page.wait_for_timeout(500)
+            raise Exception("No valid enabled options found in dropdown")
+            
+        random_index = random.randint(0, len(valid_options) - 1)
+        target_option = valid_options[random_index]
         option_text = target_option.inner_text().strip().replace('\n', ' ')
         target_option.click()
         self.page.wait_for_timeout(500)
@@ -122,35 +150,57 @@ class PropertyPage(BasePage):
         self.select_dropdown_option(self.property_cat_trigger, property_category)
         self.page.wait_for_timeout(1000)
         
-        # 3. Select any random option from "Sub Category" dropdown
-        print("Selecting dynamic 'Sub Category'...")
-        sub_cat = self.select_random_dropdown_option(self.subcategory_trigger)
-        print(f"  Selected subcategory: {sub_cat}")
-        
-        # 4. Select any random project from "Project Name" dropdown
-        print("Selecting dynamic 'Project Name'...")
-        project_name = self.select_random_dropdown_option(self.project_trigger)
-        print(f"  Selected project: {project_name}")
-        
-        # 5. Select any random State from "State" dropdown
-        print("Selecting dynamic 'State'...")
-        state_name = self.select_random_dropdown_option(self.state_trigger)
-        print(f"  Selected state: {state_name}")
-        
-        # 6. Select any random City from "City" dropdown
-        print("Selecting dynamic 'City'...")
-        city_name = self.select_random_dropdown_option(self.city_trigger)
-        print(f"  Selected city: {city_name}")
-        
-        # 7. Select any random Locality/Area from "Locality/Area" dropdown
-        print("Selecting dynamic 'Locality/Area'...")
-        print("  Waiting for Locality/Area trigger to be enabled...")
-        for _ in range(10):
-            if not self.locality_trigger.is_disabled():
+        # 3. Select Sub Category & 4. Select Project Name (with retry if one fails/has no options)
+        project_name = None
+        sub_cat = None
+        for attempt in range(5):
+            try:
+                print(f"Selecting dynamic 'Sub Category' (attempt {attempt+1})...")
+                sub_cat = self.select_random_dropdown_option(self.subcategory_trigger)
+                print(f"  Selected subcategory: {sub_cat}")
+                
+                print("Selecting dynamic 'Project Name'...")
+                project_name = self.select_random_dropdown_option(self.project_trigger)
+                print(f"  Selected project: {project_name}")
                 break
-            self.page.wait_for_timeout(500)
-        locality_name = self.select_random_dropdown_option(self.locality_trigger)
-        print(f"  Selected locality: {locality_name}")
+            except Exception as e:
+                print(f"Failed Sub Category/Project selection: {e}. Retrying selection...")
+                self.page.wait_for_timeout(1000)
+        else:
+            raise Exception("Failed to select valid Sub Category and Project Name after 5 attempts")
+            
+        # Store selected Project name for lead flow
+        from config.settings import store_project_name
+        store_project_name(project_name)
+        
+        # 5. Select State, 6. Select City, 7. Select Locality/Area (with retry if one fails/has no options)
+        state_name = None
+        city_name = None
+        locality_name = None
+        for attempt in range(5):
+            try:
+                print(f"Selecting dynamic 'State' (attempt {attempt+1})...")
+                state_name = self.select_random_dropdown_option(self.state_trigger)
+                print(f"  Selected state: {state_name}")
+                
+                print("Selecting dynamic 'City'...")
+                city_name = self.select_random_dropdown_option(self.city_trigger)
+                print(f"  Selected city: {city_name}")
+                
+                print("Selecting dynamic 'Locality/Area'...")
+                print("  Waiting for Locality/Area trigger to be enabled...")
+                for _ in range(10):
+                    if not self.locality_trigger.is_disabled():
+                        break
+                    self.page.wait_for_timeout(500)
+                locality_name = self.select_random_dropdown_option(self.locality_trigger)
+                print(f"  Selected locality: {locality_name}")
+                break
+            except Exception as e:
+                print(f"Failed State/City/Locality selection: {e}. Retrying selection...")
+                self.page.wait_for_timeout(1000)
+        else:
+            raise Exception("Failed to select valid State, City, and Locality after 5 attempts")
         
         # 8. Select any random option from "Configuration" dropdown
         print("Selecting dynamic 'Configuration'...")
