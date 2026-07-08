@@ -1,46 +1,59 @@
 pipeline {
     agent any
 
+    environment {
+        // Define path to our custom Python installation and add it to PATH
+        PATH = "${WORKSPACE}/tools/python/bin:${PATH}"
+    }
+
     stages {
-        stage('Detailed Diagnostics') {
+        stage('Setup Portable Python') {
             steps {
                 sh '''
-                    echo "=== System Info ==="
-                    uname -a
-                    if [ -f /etc/os-release ]; then
-                        cat /etc/os-release
+                    if [ ! -d "tools/python" ]; then
+                        echo "Downloading portable Python 3.11..."
+                        mkdir -p tools
+                        curl -L "https://github.com/astral-sh/python-build-standalone/releases/download/20240726/cpython-3.11.9+20240726-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz" -o tools/python.tar.gz
+                        
+                        echo "Extracting Python..."
+                        tar -xzf tools/python.tar.gz -C tools/
+                        rm tools/python.tar.gz
                     fi
-                    
-                    echo "=== Current User ==="
-                    whoami
-                    id
-                    
-                    echo "=== Sudo Access Check ==="
-                    if command -v sudo >/dev/null 2>&1; then
-                        if sudo -n true >/dev/null 2>&1; then
-                            echo "Passwordless sudo is AVAILABLE"
-                        else
-                            echo "Sudo is installed but requires a password"
-                        fi
-                    else
-                        echo "Sudo is NOT installed"
-                    fi
-
-                    echo "=== Package Managers ==="
-                    for cmd in apt-get apk yum dnf brew; do
-                        if command -v $cmd >/dev/null 2>&1; then
-                            echo "Package manager found: $cmd ($(which $cmd))"
-                        fi
-                    done
-
-                    echo "=== Utilities ==="
-                    for cmd in curl wget tar unzip zip gpg; do
-                        if command -v $cmd >/dev/null 2>&1; then
-                            echo "Utility found: $cmd ($(which $cmd))"
-                        fi
-                    done
+                    echo "Python location: $(which python3)"
+                    python3 --version
                 '''
             }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    python3 -m pip install --upgrade pip
+                    pip install -r requirements.txt
+                    
+                    echo "Installing Playwright Chromium browser..."
+                    playwright install chromium
+                '''
+            }
+        }
+
+        stage('Run Playwright Tests') {
+            steps {
+                // If secrets/credentials are configured in Jenkins, you can bind them here:
+                // withCredentials([usernamePassword(credentialsId: 'makanify-credentials', usernameVariable: 'MAKANIFY_EMAIL', passwordVariable: 'MAKANIFY_PASSWORD')]) {
+                sh '''
+                    pytest --tracing=retain-on-failure --junitxml=report.xml
+                '''
+                // }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Archive JUnit test reports and other artifacts
+            junit testResults: 'report.xml', allowEmptyResults: true
+            archiveArtifacts artifacts: 'screenshots/**, test-results/**, reports/**', allowEmptyArchive: true
         }
     }
 }
