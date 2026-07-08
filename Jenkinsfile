@@ -2,35 +2,43 @@ pipeline {
     agent any
 
     stages {
-        stage('Diagnostics') {
+        stage('Detailed Diagnostics') {
             steps {
                 sh '''
-                    echo "=== CLI Diagnostics ==="
-                    echo "PATH: $PATH"
+                    echo "=== System Info ==="
+                    uname -a
+                    if [ -f /etc/os-release ]; then
+                        cat /etc/os-release
+                    fi
                     
-                    echo "--- checking python3 ---"
-                    if command -v python3 >/dev/null 2>&1; then
-                        echo "Found python3: $(which python3)"
-                        python3 --version
+                    echo "=== Current User ==="
+                    whoami
+                    id
+                    
+                    echo "=== Sudo Access Check ==="
+                    if command -v sudo >/dev/null 2>&1; then
+                        if sudo -n true >/dev/null 2>&1; then
+                            echo "Passwordless sudo is AVAILABLE"
+                        else
+                            echo "Sudo is installed but requires a password"
+                        fi
                     else
-                        echo "python3 not found"
+                        echo "Sudo is NOT installed"
                     fi
 
-                    echo "--- checking python ---"
-                    if command -v python >/dev/null 2>&1; then
-                        echo "Found python: $(which python)"
-                        python --version
-                    else
-                        echo "python not found"
-                    fi
+                    echo "=== Package Managers ==="
+                    for cmd in apt-get apk yum dnf brew; do
+                        if command -v $cmd >/dev/null 2>&1; then
+                            echo "Package manager found: $cmd ($(which $cmd))"
+                        fi
+                    done
 
-                    echo "--- checking docker ---"
-                    if command -v docker >/dev/null 2>&1; then
-                        echo "Found docker: $(which docker)"
-                        docker --version
-                    else
-                        echo "docker not found"
-                    fi
+                    echo "=== Utilities ==="
+                    for cmd in curl wget tar unzip zip gpg; do
+                        if command -v $cmd >/dev/null 2>&1; then
+                            echo "Utility found: $cmd ($(which $cmd))"
+                        fi
+                    done
                 '''
             }
         }
