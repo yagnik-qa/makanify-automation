@@ -114,5 +114,6 @@ jobs:
         path: |
           screenshots/
           test-results/
+          reports/
         if-no-files-found: ignore
         retention-days: 30
