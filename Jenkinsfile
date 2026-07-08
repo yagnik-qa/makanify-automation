@@ -31,8 +31,8 @@ pipeline {
                     python3 -m pip install --upgrade pip
                     pip install -r requirements.txt
                     
-                    echo "Installing Playwright Chromium browser..."
-                    playwright install chromium
+                    echo "Installing Playwright Chromium browser and its OS system dependencies..."
+                    playwright install chromium --with-deps
                 '''
             }
         }
