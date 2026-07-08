@@ -14,7 +14,11 @@ def browser_context_args(browser_context_args):
 
 @pytest.fixture(scope="session")
 def browser_type_launch_args(browser_type_launch_args):
-    headless = os.getenv("HEADLESS", "false").lower() == "true"
+    # Respect the command line option (e.g. --headed) if provided,
+    # otherwise default to headless mode (True) unless HEADLESS env var is set.
+    headless = browser_type_launch_args.get("headless", True)
+    if "HEADLESS" in os.environ:
+        headless = os.getenv("HEADLESS").lower() == "true"
     return {
         **browser_type_launch_args,
         "headless": headless,
