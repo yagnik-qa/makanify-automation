@@ -53,7 +53,8 @@ pipeline {
         always {
             // Archive JUnit test reports and other artifacts
             junit testResults: 'report.xml', allowEmptyResults: true
-            archiveArtifacts artifacts: 'screenshots/**, test-results/**, reports/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'screenshots/**, test-results/**, reports/**, allure-results/**', allowEmptyArchive: true
+            allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
         }
     }
 }

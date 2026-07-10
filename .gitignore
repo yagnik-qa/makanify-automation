@@ -10,3 +10,5 @@ playwright/.cache/
 .env
 .scannerwork/
 allure-results/
+allure-report/
+
