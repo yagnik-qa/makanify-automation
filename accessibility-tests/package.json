@@ -1,0 +1,14 @@
+{
+  "name": "makanify-accessibility-tests",
+  "version": "1.0.0",
+  "description": "Accessibility automation testing using Playwright and @axe-core/playwright",
+  "main": "index.js",
+  "scripts": {
+    "test:accessibility": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.49.0",
+    "allure-playwright": "^3.10.2"
+  }
+}
