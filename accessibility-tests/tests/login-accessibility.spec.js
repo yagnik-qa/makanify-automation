@@ -8,7 +8,7 @@ test.describe('Makanify Login Page Accessibility Audit', () => {
 
     // Wait for the form email input to ensure components are loaded
     await page.waitForSelector('#email', { state: 'visible' });
-    // Run the accessibility scan using the reusable helper
+
     // Run the accessibility scan using the reusable helper
     await runAxeScan(page);
   });
